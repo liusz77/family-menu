@@ -90,3 +90,47 @@ input[type="text"], select { width: 100%; padding: 10px; margin: 6px 0; border-r
 .preview-img { width: 100%; max-height: 150px; object-fit: contain; }
 .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
 .empty-hint { color: #999; text-align: center; margin-top: 40px; }
+
+/* 管理列表样式优化 */
+#manage-list {
+  list-style: none;
+  padding: 0;
+}
+#manage-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+#manage-list li img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+#manage-list li span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#manage-list li .btn-orange {
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+#manage-list li label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+#manage-list li input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
