@@ -187,15 +187,18 @@ async function renderManage() {
   dishes.forEach(dish => {
     const li = document.createElement('li');
     li.innerHTML = `
-      <img src="${dish.imageData || 'icons/icon-192.png'}" width="40" height="40" style="object-fit:cover;border-radius:6px;">
+      <img src="${dish.imageData || 'icons/icon-192.png'}" alt="">
       <span>${dish.name} (${dish.category})</span>
       <button class="edit-dish btn-orange" data-id="${dish.id}">编辑</button>
       <button class="delete-dish btn-orange" data-id="${dish.id}">删除</button>
-      <label>供应 <input type="checkbox" class="avail-toggle" data-id="${dish.id}" ${dish.isAvailable ? 'checked' : ''}></label>
+      <label>
+        <input type="checkbox" class="avail-toggle" data-id="${dish.id}" ${dish.isAvailable ? 'checked' : ''}>
+        供应
+      </label>
     `;
     list.appendChild(li);
   });
-  // 绑定事件
+  // 绑定事件（保持不变）
   document.querySelectorAll('.edit-dish').forEach(btn => {
     btn.onclick = async (e) => {
       const id = e.target.dataset.id;
@@ -222,6 +225,7 @@ async function renderManage() {
     };
   });
 }
+
 
 document.getElementById('add-dish-btn').onclick = () => openDishForm(null);
 function openDishForm(dish) {
@@ -299,11 +303,11 @@ document.getElementById('surprise-toggle').addEventListener('change', async (e) 
   const existing = await getAllDishes();
   if (existing.length === 0) {
     await addDish({
-      id: '1', name: '番茄炒蛋', category: '菜', imageData: '',
+      id: '1', name: '番茄炒蛋', category: '家常菜', imageData: '',
       ingredients: '番茄、鸡蛋', nutrition: '热量120kcal', notes: '含鸡蛋', isAvailable: true, createdAt: new Date().toISOString()
     });
     await addDish({
-      id: '2', name: '橙汁', category: '饮品', imageData: '',
+      id: '2', name: '橙汁', category: '快乐水', imageData: '',
       ingredients: '橙子', nutrition: '糖分15g', notes: '鲜榨', isAvailable: true, createdAt: new Date().toISOString()
     });
   }
