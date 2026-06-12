@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>家庭点菜</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <!-- 引入 idb 库，用来操作 IndexedDB -->
+  <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- 内容区 -->
+    <main id="content">
+      <!-- 每个页面一个 div，默认显示菜单页 -->
+      <div id="page-menu" class="page active">
+        <div class="category-bar">
+          <button class="cat-btn active" data-cat="全部">全部</button>
+          <button class="cat-btn" data-cat="菜">菜</button>
+          <button class="cat-btn" data-cat="饮品">饮品</button>
+          <button class="cat-btn" data-cat="甜点">甜点</button>
+        </div>
+        <div id="surprise-bar" class="surprise-bar hidden"></div>
+        <div id="dish-grid" class="dish-grid"></div>
+        <!-- 菜品详情弹窗 -->
+        <div id="detail-modal" class="modal hidden">
+          <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="detail-img" src="" alt="">
+            <h2 id="detail-name"></h2>
+            <p><strong>食材：</strong><span id="detail-ingredients"></span></p>
+            <p><strong>营养含量：</strong><span id="detail-nutrition"></span></p>
+            <p><strong>注意事项：</strong><span id="detail-notes"></span></p>
+            <div class="quantity-box">
+              <button id="qty-minus">-</button>
+              <span id="qty-num">1</span>
+              <button id="qty-plus">+</button>
+            </div>
+            <input type="text" id="order-note" placeholder="特殊需求（如少盐）">
+            <button id="add-to-cart" class="btn-orange">加入购物车</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-cart" class="page">
+        <ul id="cart-list"></ul>
+        <div id="cart-empty" class="empty-hint">购物车是空的，去点菜吧</div>
+        <button id="submit-order" class="btn-orange full-width">提交订单</button>
+      </div>
+
+      <div id="page-orders" class="page">
+        <ul id="order-list"></ul>
+        <div class="order-count"></div>
+      </div>
+
+      <div id="page-manage" class="page">
+        <button id="add-dish-btn" class="btn-orange full-width">+ 添加菜品</button>
+        <ul id="manage-list"></ul>
+        <!-- 添加/编辑菜品弹窗 -->
+        <div id="dish-form-modal" class="modal hidden">
+          <div class="modal-content">
+            <span class="close-form">&times;</span>
+            <h2 id="form-title">添加菜品</h2>
+            <input type="text" id="dish-name" placeholder="名称">
+            <select id="dish-category">
+              <option value="菜">菜</option>
+              <option value="饮品">饮品</option>
+              <option value="甜点">甜点</option>
+            </select>
+            <label class="upload-btn btn-orange">
+              上传照片 <input type="file" id="dish-image" accept="image/*" capture="environment">
+            </label>
+            <img id="dish-preview" class="preview-img hidden">
+            <input type="text" id="dish-ingredients" placeholder="食材组成">
+            <input type="text" id="dish-nutrition" placeholder="营养含量">
+            <input type="text" id="dish-notes" placeholder="注意事项">
+            <label><input type="checkbox" id="dish-available" checked> 今日供应</label>
+            <button id="save-dish" class="btn-orange">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-settings" class="page">
+        <label class="setting-item">
+          <span>随机推荐惊喜菜</span>
+          <input type="checkbox" id="surprise-toggle">
+        </label>
+      </div>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-page="menu">🍽️ 菜单</button>
+      <button class="nav-btn" data-page="cart">🛒 购物车</button>
+      <button class="nav-btn" data-page="orders">📋 订单</button>
+      <button class="nav-btn" data-page="manage">⚙️ 管理</button>
+      <button class="nav-btn" data-page="settings">🎚️ 设置</button>
+    </nav>
+  </div>
+
+  <script src="./js/db.js"></script>
+  <script src="./js/app.js"></script>
+  <script>
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
