@@ -20,9 +20,11 @@
       <div id="page-menu" class="page active">
         <div class="category-bar">
           <button class="cat-btn active" data-cat="全部">全部</button>
-          <button class="cat-btn" data-cat="菜">菜</button>
-          <button class="cat-btn" data-cat="饮品">饮品</button>
-          <button class="cat-btn" data-cat="甜点">甜点</button>
+          <button class="cat-btn" data-cat="健康早餐">健康早餐</button>
+          <button class="cat-btn" data-cat="家常菜">家常菜</button>
+          <button class="cat-btn" data-cat="地方特色">地方特色</button>
+          <button class="cat-btn" data-cat="快乐水">快乐水</button>
+          <button class="cat-btn" data-cat="面包与蛋糕">面包与蛋糕</button>
         </div>
         <div id="surprise-bar" class="surprise-bar hidden"></div>
         <div id="dish-grid" class="dish-grid"></div>
@@ -67,12 +69,14 @@
             <h2 id="form-title">添加菜品</h2>
             <input type="text" id="dish-name" placeholder="名称">
             <select id="dish-category">
-              <option value="菜">菜</option>
-              <option value="饮品">饮品</option>
-              <option value="甜点">甜点</option>
+              <option value="健康早餐">健康早餐</option>
+              <option value="家常菜">家常菜</option>
+              <option value="地方特色">地方特色</option>
+              <option value="快乐水">快乐水</option>
+              <option value="面包与蛋糕">面包与蛋糕</option>
             </select>
             <label class="upload-btn btn-orange">
-              上传照片 <input type="file" id="dish-image" accept="image/*" capture="environment">
+              上传照片 <input type="file" id="dish-image" accept="image/*">
             </label>
             <img id="dish-preview" class="preview-img hidden">
             <input type="text" id="dish-ingredients" placeholder="食材组成">
