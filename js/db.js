@@ -1,80 +1,97 @@
-// db.js
-// 依赖 idb 库，在 HTML 里通过 <script src="...idb.js"> 引入
-
-const DB_NAME = 'FamilyMenuDB';
-const DB_VERSION = 1;
-
-let dbPromise;
-
-function openDB() {
-  if (!dbPromise) {
-    dbPromise = idb.openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        // 菜品表
-        if (!db.objectStoreNames.contains('dishes')) {
-          const dishStore = db.createObjectStore('dishes', { keyPath: 'id' });
-          dishStore.createIndex('category', 'category');
-        }
-        // 订单表
-        if (!db.objectStoreNames.contains('orders')) {
-          const orderStore = db.createObjectStore('orders', { keyPath: 'id' });
-          orderStore.createIndex('orderTime', 'orderTime');
-        }
-        // 设置表（简单键值对）
-        if (!db.objectStoreNames.contains('settings')) {
-          db.createObjectStore('settings', { keyPath: 'key' });
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
+// db.js  使用腾讯云 CloudBase 文档型数据库
+// 注意：需要在全局环境有 app (cloudbase实例) 和 db (数据库实例)
+// 已在 index.html 中初始化并注入
 
 // ===== 菜品操作 =====
 async function getAllDishes() {
-  const db = await openDB();
-  return db.getAll('dishes');
+  const res = await db.collection('Dish')
+    .orderBy('createTime', 'desc')
+    .get();
+  // 映射 _id 为 id，方便前端使用
+  return res.data.map(dish => ({
+    id: dish._id,
+    name: dish.name,
+    category: dish.category,
+    imageData: dish.imageData,
+    ingredients: dish.ingredients,
+    nutrition: dish.nutrition,
+    notes: dish.notes,
+    isAvailable: dish.isAvailable,
+    createTime: dish.createTime
+  }));
 }
 
 async function getDishById(id) {
-  const db = await openDB();
-  return db.get('dishes', id);
+  const res = await db.collection('Dish').doc(id).get();
+  const dish = res.data[0];
+  return {
+    id: dish._id,
+    name: dish.name,
+    category: dish.category,
+    imageData: dish.imageData,
+    ingredients: dish.ingredients,
+    nutrition: dish.nutrition,
+    notes: dish.notes,
+    isAvailable: dish.isAvailable,
+    createTime: dish.createTime
+  };
 }
 
-async function addDish(dish) {
-  const db = await openDB();
-  // dish 必须包含 id (自生成), name, category, imageData (base64), ingredients, nutrition, notes, isAvailable, createdAt
-  await db.add('dishes', dish);
+async function addDish(dishData) {
+  // 移除前端生成的 id，让数据库自动生成 _id
+  const { id, ...data } = dishData;
+  await db.collection('Dish').add(data);
 }
 
-async function updateDish(dish) {
-  const db = await openDB();
-  await db.put('dishes', dish);
+async function updateDish(dishData) {
+  const { id, ...data } = dishData;
+  await db.collection('Dish').doc(id).update(data);
 }
 
 async function deleteDish(id) {
-  const db = await openDB();
-  await db.delete('dishes', id);
+  await db.collection('Dish').doc(id).remove();
 }
 
 // ===== 订单操作 =====
 async function getAllOrders() {
-  const db = await openDB();
-  return db.getAll('orders');
+  const res = await db.collection('Order')
+    .orderBy('orderTime', 'desc')
+    .get();
+  return res.data.map(order => ({
+    id: order._id,
+    dishName: order.dishName,
+    quantity: order.quantity,
+    notes: order.notes,
+    status: order.status,
+    orderTime: order.orderTime
+  }));
 }
 
-async function addOrder(order) {
-  const db = await openDB();
-  await db.add('orders', order);
+async function addOrder(orderData) {
+  // 同样移除可能传入的 id，使用数据库自动生成的
+  const { id, ...data } = orderData;
+  await db.collection('Order').add(data);
 }
 
 // ===== 设置操作 =====
 async function getSetting(key) {
-  const db = await openDB();
-  return db.get('settings', key);
+  const res = await db.collection('Setting')
+    .where({ key: key })
+    .get();
+  if (res.data.length > 0) {
+    return res.data[0]; // 返回 { key, value }
+  }
+  return null;
 }
 
 async function saveSetting(key, value) {
-  const db = await openDB();
-  await db.put('settings', { key, value });
+  // 先查找是否存在
+  const exist = await db.collection('Setting').where({ key }).get();
+  if (exist.data.length > 0) {
+    // 更新
+    await db.collection('Setting').doc(exist.data[0]._id).update({ value });
+  } else {
+    // 新增
+    await db.collection('Setting').add({ key, value });
+  }
 }
