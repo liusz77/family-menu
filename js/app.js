@@ -1,11 +1,11 @@
-// app.js
+// app.js  家庭点菜主逻辑（适配腾讯云 CloudBase）
 // 全局变量
 let currentPage = 'menu';
 let dishes = [];
 let cart = []; // { dishId, name, quantity, notes }
 let editingDishId = null;
 
-// ===== 页面导航 =====
+// ===== 页面导航（无变化）=====
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     const page = e.currentTarget.dataset.page;
@@ -77,7 +77,7 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
   });
 });
 
-// 详情弹窗
+// 详情弹窗（id 已自动映射）
 function showDetail(dish) {
   const modal = document.getElementById('detail-modal');
   document.getElementById('detail-img').src = dish.imageData || 'icons/icon-192.png';
@@ -89,7 +89,6 @@ function showDetail(dish) {
   document.getElementById('order-note').value = '';
   modal.classList.remove('hidden');
 
-  // 数量增减
   let qty = 1;
   document.getElementById('qty-minus').onclick = () => {
     if (qty > 1) { qty--; document.getElementById('qty-num').textContent = qty; }
@@ -99,7 +98,7 @@ function showDetail(dish) {
   };
   document.getElementById('add-to-cart').onclick = () => {
     cart.push({
-      dishId: dish.id,
+      dishId: dish.id,   // dish.id 即云端 _id
       name: dish.name,
       quantity: qty,
       notes: document.getElementById('order-note').value
@@ -141,11 +140,12 @@ function renderCart() {
     });
   }
 }
+
 document.getElementById('submit-order').addEventListener('click', async () => {
   if (cart.length === 0) return;
   for (let item of cart) {
+    // ===== 修改：不再手动生成 id，让数据库自动生成 =====
     await addOrder({
-      id: Date.now().toString() + Math.random(),
       dishName: item.name,
       quantity: item.quantity,
       notes: item.notes,
@@ -198,7 +198,7 @@ async function renderManage() {
     `;
     list.appendChild(li);
   });
-  // 绑定事件（保持不变）
+  // 绑定事件
   document.querySelectorAll('.edit-dish').forEach(btn => {
     btn.onclick = async (e) => {
       const id = e.target.dataset.id;
@@ -226,14 +226,13 @@ async function renderManage() {
   });
 }
 
-
 document.getElementById('add-dish-btn').onclick = () => openDishForm(null);
 function openDishForm(dish) {
   const modal = document.getElementById('dish-form-modal');
   modal.classList.remove('hidden');
   document.getElementById('form-title').textContent = dish ? '编辑菜品' : '添加菜品';
   document.getElementById('dish-name').value = dish?.name || '';
-  document.getElementById('dish-category').value = dish?.category || '菜';
+  document.getElementById('dish-category').value = dish?.category || '家常菜';
   document.getElementById('dish-ingredients').value = dish?.ingredients || '';
   document.getElementById('dish-nutrition').value = dish?.nutrition || '';
   document.getElementById('dish-notes').value = dish?.notes || '';
@@ -250,9 +249,12 @@ function openDishForm(dish) {
 document.querySelector('.close-form').onclick = () => {
   document.getElementById('dish-form-modal').classList.add('hidden');
 };
+
+// ===== 修改：图片上传改为腾讯云文件存储，不再使用 base64 =====
 document.getElementById('dish-image').addEventListener('change', function() {
   const file = this.files[0];
   if (file) {
+    // 仅在本地预览用 base64，但最终上传的是文件
     const reader = new FileReader();
     reader.onload = function(e) {
       const preview = document.getElementById('dish-preview');
@@ -262,24 +264,52 @@ document.getElementById('dish-image').addEventListener('change', function() {
     reader.readAsDataURL(file);
   }
 });
+
 document.getElementById('save-dish').addEventListener('click', async () => {
   const name = document.getElementById('dish-name').value.trim();
   if (!name) { alert('请输入名称'); return; }
+  
+  // ===== 图片上传处理（改用 CloudBase 文件存储） =====
+  let imageData = editingDishId ? (await getDishById(editingDishId)).imageData : '';
+  const fileInput = document.getElementById('dish-image');
+  
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    try {
+      // 上传到云端
+      const result = await app.uploadFile({
+        cloudPath: 'dish-images/' + Date.now() + '-' + file.name,
+        filePath: file
+      });
+      // 获取临时下载链接（永久有效）
+      const urlRes = await app.getTempFileURL({
+        fileList: [result.fileID]
+      });
+      imageData = urlRes.fileList[0].tempFileURL;
+    } catch (err) {
+      alert('图片上传失败，请重试');
+      console.error(err);
+      return;
+    }
+  }
+  
   const dishData = {
     name,
     category: document.getElementById('dish-category').value,
-    imageData: document.getElementById('dish-preview').src || '',
+    imageData: imageData,
     ingredients: document.getElementById('dish-ingredients').value,
     nutrition: document.getElementById('dish-nutrition').value,
     notes: document.getElementById('dish-notes').value,
     isAvailable: document.getElementById('dish-available').checked,
-    createdAt: new Date().toISOString(),
+    // ===== 修改：字段名改为 createTime，避开内置 createdAt =====
+    createTime: new Date().toISOString()
   };
+  
   if (editingDishId) {
     dishData.id = editingDishId;
     await updateDish(dishData);
   } else {
-    dishData.id = Date.now().toString() + Math.random();
+    // ===== 修改：不再手动生成 id，addDish 内部会移除 =====
     await addDish(dishData);
   }
   document.getElementById('dish-form-modal').classList.add('hidden');
@@ -297,19 +327,21 @@ document.getElementById('surprise-toggle').addEventListener('change', async (e) 
   if (currentPage === 'menu') renderMenu();
 });
 
-// ===== 初始化 =====
+// ===== 初始化：不再需要示例菜品，云端是空的，让用户自行添加 =====
 (async () => {
-  // 首次启动填入一些示例菜品（可选）
+  /*
+  // 首次启动填入示例菜品（已注释，如需预置数据可取消注释）
   const existing = await getAllDishes();
   if (existing.length === 0) {
     await addDish({
-      id: '1', name: '番茄炒蛋', category: '家常菜', imageData: '',
-      ingredients: '番茄、鸡蛋', nutrition: '热量120kcal', notes: '含鸡蛋', isAvailable: true, createdAt: new Date().toISOString()
+      name: '番茄炒蛋', category: '家常菜', imageData: '',
+      ingredients: '番茄、鸡蛋', nutrition: '热量120kcal', notes: '含鸡蛋', isAvailable: true, createTime: new Date().toISOString()
     });
     await addDish({
-      id: '2', name: '橙汁', category: '快乐水', imageData: '',
-      ingredients: '橙子', nutrition: '糖分15g', notes: '鲜榨', isAvailable: true, createdAt: new Date().toISOString()
+      name: '橙汁', category: '快乐水', imageData: '',
+      ingredients: '橙子', nutrition: '糖分15g', notes: '鲜榨', isAvailable: true, createTime: new Date().toISOString()
     });
   }
+  */
   switchPage('menu');
 })();
